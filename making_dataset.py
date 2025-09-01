@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore', category=lk.LightkurveWarning)
 
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
-#print(script_dir)
+
 
 
 exoplanet_dataset_path = rf"{script_dir}\predataset\exoplanet_archive.csv"
@@ -24,23 +24,16 @@ exoplanet_dataset_path = rf"{script_dir}\predataset\exoplanet_archive.csv"
 
 exoplanet_dataset = pd.read_csv(exoplanet_dataset_path,comment="#")
 
-#print(exoplanet_dataset.head(40))
+
 counts = exoplanet_dataset['koi_disposition'].value_counts()
 print(
     f"Confirmed Exoplanets   {counts.get('CONFIRMED', 0)}\n"
     f"False Positive Exoplanets {counts.get('FALSE POSITIVE', 0)}\n"
     f"Candidate Exoplanets   {counts.get('CANDIDATE', 0)}"
 )
-#Extracting Candidate datas
+
 mask = exoplanet_dataset["koi_disposition"].isin(["CONFIRMED","FALSE POSITIVE"])
 masked_dataset = exoplanet_dataset[mask]
-#masked_dataset = exoplanet_dataset[mask].iloc[0:20]
-
-#print(masked_dataset.head(40))
-
-#print("flux listesi\n",lc.flux, "time listesi",lc.time)
-
-#print(  f"2 flux datası arası gün süre (gün) {((lc.time[1])-(lc.time[0])).jd} gün\n"  f"2 flux datası arası gün süre (dk)  {(((lc.time[1])-(lc.time[0])).jd)*24*60} dk")
 
 
 k = 0

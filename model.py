@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-#benzersiz model ismi
 from datetime import datetime
 from zoneinfo import ZoneInfo  
 
@@ -19,21 +18,21 @@ script_dir = os.path.dirname(script_path)
 
 
 def normalize_data(X):
-    # 1) Girdi formatını düzleştir:
+
     if X.ndim == 3 and X.shape[-1] == 1:
-        X_flat = X[..., 0]           # (n, seq_len)
+        X_flat = X[..., 0]          
     elif X.ndim == 2:
-        X_flat = X                   # (n, seq_len)
+        X_flat = X                 
     else:
-        raise ValueError(f"Beklenmedik X shape: {X.shape}")
+        raise ValueError(f"Invalid X shape: {X.shape}")
     
-    # 2) Örnek başına ortalama ve std:
-    mean = X_flat.mean(axis=1, keepdims=True)    # (n, 1)
+   
+    mean = X_flat.mean(axis=1, keepdims=True)    
     std  = X_flat.std (axis=1, keepdims=True) + 1e-6
     
-    # 3) Normalize et ve tekrar kanalı ekle:
-    X_norm = (X_flat - mean) / std               # (n, seq_len)
-    return X_norm[..., np.newaxis]               # (n, seq_len, 1)
+ 
+    X_norm = (X_flat - mean) / std              
+    return X_norm[..., np.newaxis]               
 
 
 flux_size = 2000
@@ -58,10 +57,7 @@ test_data = (pre_test_data[["label"]+flux_2k]
 X_test = test_data[:,1:2000]
 Y_test = test_data[:,0]
 
-# Faz Katlaması Verileri Ortalama 2000 Uzunluğunda Oldukları İçin 
-# Tüm Verileri 2000 Noktasına Kadar Kırpıyoruz
-# Bazı Verilerde Kalan NaN Değerlerini 
-# İnterpolasyon Metodu İle Dolduruyoruz
+
 val_data_path = os.path.join(script_dir, 'Dataset', 'phase_fold', 'validation_data.csv')
 pre_val_data = pd.read_csv(val_data_path)
 val_data = (pre_val_data[["label"]+flux_2k]
@@ -69,12 +65,7 @@ val_data = (pre_val_data[["label"]+flux_2k]
         .to_numpy())
 X_val = val_data[:,1:2000]
 Y_val = val_data[:,0]
-# .
-# .
-# .
-# Train ve Test İçin Aynı İşlemler
 
-# Veriler Çok Fazla 1
 X_train = normalize_data(X_train)
 X_val   = normalize_data(X_val)
 X_test  = normalize_data(X_test)
@@ -84,15 +75,15 @@ X_test  = normalize_data(X_test)
 
 
 def dataset_for_model(X, y, shuffle=False, batch_size=32):
-    #tf ye döndür
+  
     ds = tf.data.Dataset.from_tensor_slices((X, y))
 
     if shuffle:
         ds = ds.shuffle(buffer_size=len(X), reshuffle_each_iteration=True)
-    #prefetch : CPU/GPU paralelliği sağlar
+
     return ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 
-#modelin aynı anda işlediği örnek sayısı
+
 batch_size = 64
 train_ds = dataset_for_model(X_train, Y_train, shuffle=True, batch_size=batch_size)
 val_ds   = dataset_for_model(X_val,   Y_val,   shuffle=False, batch_size=batch_size)
@@ -103,13 +94,13 @@ test_ds  = dataset_for_model(X_test,  Y_test,  shuffle=False, batch_size=batch_s
 from sklearn.utils import class_weight
 
 weights = class_weight.compute_class_weight(
-    #class_weight='balanced',
-    class_weight = {0:1.0, 1:1.5} ,#1.5 ->71
+
+    class_weight = {0:1.0, 1:1.5} ,
     classes=np.unique(Y_train),
     y=Y_train
 )
 
-# Anahtarları int'e çeviriyoruz
+
 class_weight_dict = {int(cls): weight for cls, weight in zip(np.unique(Y_train), weights)}
 print("Class weights:", class_weight_dict)
 
@@ -118,7 +109,7 @@ from tensorflow.keras import layers, models, regularizers
 def build_model(input_length):
     inputs = layers.Input(shape=(input_length, 1))
 
-    # --- 1. BLOK ---
+   
     x = layers.Conv1D(
             16, 5, padding='same',
             kernel_regularizer=regularizers.l2(1e-4)
@@ -133,7 +124,7 @@ def build_model(input_length):
     x = layers.Activation('relu')(x)
     x = layers.MaxPooling1D(2)(x)
 
-    # --- 2. BLOK ---
+
     x = layers.Conv1D(
             32, 5, padding='same',
             kernel_regularizer=regularizers.l2(1e-4)
@@ -148,7 +139,7 @@ def build_model(input_length):
     x = layers.Activation('relu')(x)
     x = layers.MaxPooling1D(2)(x)
 
-    # --- 3. BLOK ---
+
     x = layers.Conv1D(
             64, 5, padding='same',
             kernel_regularizer=regularizers.l2(1e-4)
@@ -163,18 +154,18 @@ def build_model(input_length):
     x = layers.Activation('relu')(x)
     x = layers.MaxPooling1D(2)(x)
 
-    # --- Flatten + Dropout ---
+
     x = layers.Flatten()(x)
     x = layers.Dropout(0.5)(x)
 
-    # --- Fully Connected Katman ---
+
     x = layers.Dense(
             256, activation='relu',
             kernel_regularizer=regularizers.l2(1e-4)
         )(x)
     x = layers.Dropout(0.5)(x)
 
-    # --- Çıkış ---
+
     outputs = layers.Dense(1, activation='sigmoid')(x)
 
     model = models.Model(inputs, outputs, name="light_model")
@@ -192,7 +183,7 @@ model.compile(
     metrics=['accuracy', tf.keras.metrics.AUC(name='auc')]
 )
 
-# Callbacks: early stopping + best‐model checkpointing
+
 callbacks = [
     tf.keras.callbacks.EarlyStopping(monitor='val_auc', 
                                      patience=10, 
@@ -222,7 +213,7 @@ from sklearn.metrics import roc_curve
 
 probs = model.predict(test_ds).flatten()
 fpr, tpr, thresholds = roc_curve(Y_test, probs)
-# “Youden’s J” için en iyi eşik:
+
 best_idx = np.argmax(tpr - fpr)
 best_thresh = thresholds[best_idx]
 print("Optimal threshold:", best_thresh)

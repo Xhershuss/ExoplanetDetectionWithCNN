@@ -40,8 +40,7 @@ def discard_ones(row):
     return cleaned_row
 
 def time_values(k):
-    #print("TİME:",len(np.arange(0, len(k))*(30/60/24)))
-    return np.arange(0, len(k))*(30/60/24) #Gün cinsinden
+    return np.arange(0, len(k))*(30/60/24) 
     
 
 def dataset_info(*args):
@@ -56,7 +55,6 @@ def dataset_info(*args):
 def curve_folding(lc):
     total_time = (lc.time.max() - lc.time.min()).to_value('day')
 
-    #periyot aramaya yarım günden başlıyor total sürenin 3te birine kadar gidiyor
     min_period = 0.5      
     max_period = total_time / 3  
     n_periods = 2000 
@@ -97,7 +95,7 @@ def pipeline(some_flux,flag):
         if(flag == 3):
             Y.append(test_labels[idx])
 
-        print(f"Eklendi, flag:{flag}")
+  
     return X,Y
 
 
@@ -105,11 +103,11 @@ def fold_to_csv():
 
     os.makedirs(f'{script_dir}/Dataset/phase_fold', exist_ok=True)
 
-    # --- Validation ---
+
     X_val, Y_val = pipeline(val_flux,1)
-    # en uzun fold dizisi
+
     max_len = max(len(arr) for arr in X_val)
-    # pad kısa dizileri sağa doğru NaN ile
+
     X_val_padded = [np.pad(arr, (0, max_len - len(arr)), constant_values=np.nan)
                     for arr in X_val]
     X_arr = np.vstack(X_val_padded)
@@ -117,9 +115,9 @@ def fold_to_csv():
     df_val = pd.DataFrame(X_arr, columns=cols)
     df_val.insert(0, "label", Y_val)
     df_val.to_csv(f'{script_dir}/Dataset/phase_fold/validation_data.csv', index=False)
-    print("Validation Oluşturuldu")
 
-    # --- Train ---
+
+
     X_train, Y_train = pipeline(train_flux,2)
     max_len = max(len(arr) for arr in X_train)
     X_train_padded = [np.pad(arr, (0, max_len - len(arr)), constant_values=np.nan)
@@ -129,10 +127,8 @@ def fold_to_csv():
     df_train = pd.DataFrame(X_arr, columns=cols)
     df_train.insert(0, "label", Y_train)
     df_train.to_csv(f'{script_dir}/Dataset/phase_fold/train_data.csv', index=False)
-    print("Train Oluşturuldu")
 
 
-    # --- Test ---
     X_test, Y_test = pipeline(test_flux,3)
     max_len = max(len(arr) for arr in X_test)
     X_test_padded = [np.pad(arr, (0, max_len - len(arr)), constant_values=np.nan)
@@ -142,13 +138,12 @@ def fold_to_csv():
     df_test = pd.DataFrame(X_arr, columns=cols)
     df_test.insert(0, "label", Y_test)
     df_test.to_csv(f'{script_dir}/Dataset/phase_fold/test_data.csv', index=False)
-    print("Test Oluşturuldu")
 
 
 
 
 
-#dataset_info(train_labels)
+
 fold_to_csv()
 
 
